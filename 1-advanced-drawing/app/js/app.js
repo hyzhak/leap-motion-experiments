@@ -1,11 +1,35 @@
 var canvas = document.createElement('canvas');
 canvas.id = 'surface';
 document.getElementById('target').appendChild(canvas);
-
 var ctx = canvas.getContext('2d');
 
+//Create a stage by getting a reference to the canvas
+var stage = new createjs.Stage("surface");
+
+//Create a Shape DisplayObject.
+var leapPointer = {x:0, y:0, z:0};
+
+/*
+var leapPointerShape = new createjs.Shape();
+var leapPointerGraphics = leapPointerShape.graphics;
+leapPointerGraphics.clear();
+leapPointerGraphics.beginFill("red").drawCircle(0, 0, 100);
+*/
+
+var leapPointerShape = new createjs.Bitmap("img/hand-cursor-42.png");
+
+var leapPointerImg = new Image();   // Create new img element
+leapPointerImg.src = 'img/hand-cursor-42.png';
+
+//var drawingSurfaceGraphics = new createjs.Graphics();
+//var drawingSurfaceContainer = new createjs.Shape(drawingSurfaceGraphics);
+
+//Add Shape instance to stage display list.
+stage.addChild(leapPointerShape);
+//stage.addChild(drawingSurfaceContainer);
+
 var controller = new Leap.Controller();
-console.log('controller', controller);
+
 controller.onFrame(function() {
     var frame = controller.frame();
     if (frame == null || !frame.valid) {
@@ -25,11 +49,19 @@ controller.onFrame(function() {
     var y = 4*(200 - position[1]);
     var density = .3 * (20 - position[2]);
     density = density>0?density:0;
-    ctx.fillStyle = "rgb(20,30,20)";
-    ctx.fillRect(x, y, density, density);
+
+    //drawingSurfaceGraphics.beginFill('#203020').drawCircle(x, y, density);
+
+    /*
     document.getElementById('x').innerHTML = "<pre>"+position[0]+"</pre>";
     document.getElementById('y').innerHTML = "<pre>"+position[1]+"</pre>";
-    document.getElementById('z').innerHTML = "<pre>"+position[2]+"</pre>";});
+    document.getElementById('z').innerHTML = "<pre>"+position[2]+"</pre>";
+    */
+
+    leapPointer.x = x;
+    leapPointer.y = y;
+    leapPointer.z = position[2];
+});
 
 controller.connect();
 
@@ -80,4 +112,36 @@ function fitToWindow(){
     if(imageData){
         ctx.putImageData(imageData, 0, 0);
     }
+}
+
+//Update stage will render next frame
+createjs.Ticker.addEventListener("tick", handleTick);
+
+function handleTick() {
+    //Set position of Shape instance.
+    var leapPointerViewDensity = leapPointer.z;
+    leapPointerViewDensity = .001 * (100 - (leapPointerViewDensity>0?leapPointerViewDensity:0));
+    leapPointerViewDensity = leapPointerViewDensity > 0 ? leapPointerViewDensity : 0;
+
+    /*
+     leapPointer.x = 100 + 100*Math.sin(0.007 * Date.now() );
+     leapPointer.y = 100 + 100*Math.cos(0.005 * Date.now() );
+     */
+
+    leapPointerShape.scaleX = leapPointerViewDensity;
+    leapPointerShape.scaleY = leapPointerViewDensity;
+    leapPointerShape.alpha = leapPointer.z > 0 ? 0.35 : 1;
+    leapPointerShape.x = leapPointer.x;
+    leapPointerShape.y = leapPointer.y;
+
+    document.getElementById('x').innerHTML = "<pre>" + leapPointer.x + "</pre>";
+    document.getElementById('y').innerHTML = "<pre>" + leapPointer.y + "</pre>";
+    document.getElementById('z').innerHTML = "<pre>" + leapPointer.z + "</pre>";
+
+    //Update stage will render next frame
+    stage.update();
+    /*
+     ctx.clearRect(0, 0, canvas.width, canvas.height);
+     ctx.drawImage(leapPointerImg, leapPointer.x, leapPointer.y, 100*leapPointerViewDensity, 100*leapPointerViewDensity)
+     */
 }
