@@ -9,24 +9,16 @@ var stage = new createjs.Stage("surface");
 //Create a Shape DisplayObject.
 var leapPointer = {x:0, y:0, z:0};
 
-/*
-var leapPointerShape = new createjs.Shape();
-var leapPointerGraphics = leapPointerShape.graphics;
-leapPointerGraphics.clear();
-leapPointerGraphics.beginFill("red").drawCircle(0, 0, 100);
-*/
+var leapPointerImg = new createjs.Bitmap("img/hand-cursor-42.png");
+var leapPointerImgHint = new createjs.Shape();
+leapPointerImgHint.graphics.beginFill('#F08010').drawCircle(0, 0, 20);
 
-var leapPointerShape = new createjs.Bitmap("img/hand-cursor-42.png");
-
-var leapPointerImg = new Image();   // Create new img element
-leapPointerImg.src = 'img/hand-cursor-42.png';
-
-//var drawingSurfaceGraphics = new createjs.Graphics();
-//var drawingSurfaceContainer = new createjs.Shape(drawingSurfaceGraphics);
+var drawingSurfaceGraphics = new createjs.Graphics();
+var drawingSurfaceContainer = new createjs.Shape(drawingSurfaceGraphics);
 
 //Add Shape instance to stage display list.
-stage.addChild(leapPointerShape);
-//stage.addChild(drawingSurfaceContainer);
+stage.addChild(drawingSurfaceContainer);
+stage.addChild(leapPointerImg);
 
 var controller = new Leap.Controller();
 
@@ -50,20 +42,29 @@ controller.onFrame(function() {
     var density = .3 * (20 - position[2]);
     density = density>0?density:0;
 
-    //drawingSurfaceGraphics.beginFill('#203020').drawCircle(x, y, density);
-
-    /*
-    document.getElementById('x').innerHTML = "<pre>"+position[0]+"</pre>";
-    document.getElementById('y').innerHTML = "<pre>"+position[1]+"</pre>";
-    document.getElementById('z').innerHTML = "<pre>"+position[2]+"</pre>";
-    */
-
     leapPointer.x = x;
     leapPointer.y = y;
     leapPointer.z = position[2];
 });
 
 controller.connect();
+
+var mouseDown = false;
+
+canvas.onmousemove = function(event){
+    leapPointer.x = event.clientX;
+    leapPointer.y = event.clientY;
+    leapPointer.z = mouseDown?-10:10;
+}
+
+canvas.onmousedown = function(event){
+    leapPointer.z = -10;
+    mouseDown = true;
+}
+
+canvas.onmouseup = function(event){
+    mouseDown = false;
+}
 
 /**
  * Z is point to user so, nearest pointable to screen with less Z.
@@ -123,16 +124,25 @@ function handleTick() {
     leapPointerViewDensity = .001 * (100 - (leapPointerViewDensity>0?leapPointerViewDensity:0));
     leapPointerViewDensity = leapPointerViewDensity > 0 ? leapPointerViewDensity : 0;
 
-    /*
-     leapPointer.x = 100 + 100*Math.sin(0.007 * Date.now() );
-     leapPointer.y = 100 + 100*Math.cos(0.005 * Date.now() );
-     */
+    if(leapPointer.z < 20){
+        leapPointerImgHint.x = leapPointer.x;
+        leapPointerImgHint.y = leapPointer.y;
+        leapPointerImgHint.alpha = (leapPointer.z > 0)?(1 - leapPointer.z / 20):1;
+        stage.addChildAt(leapPointerImgHint, 0);
+    }else{
+        stage.removeChild(leapPointerImgHint);
+    }
+    leapPointerImg.scaleX = leapPointerViewDensity;
+    leapPointerImg.scaleY = leapPointerViewDensity;
+    leapPointerImg.alpha = leapPointer.z > 0 ? 0.35 : 1;
+    leapPointerImg.x = leapPointer.x - 16;
+    leapPointerImg.y = leapPointer.y;
 
-    leapPointerShape.scaleX = leapPointerViewDensity;
-    leapPointerShape.scaleY = leapPointerViewDensity;
-    leapPointerShape.alpha = leapPointer.z > 0 ? 0.35 : 1;
-    leapPointerShape.x = leapPointer.x;
-    leapPointerShape.y = leapPointer.y;
+    var density = -.3 * leapPointer.z;
+
+    if(density > 0){
+        drawingSurfaceGraphics.beginFill('#101080').drawCircle(leapPointer.x, leapPointer.y, density);
+    }
 
     document.getElementById('x').innerHTML = "<pre>" + leapPointer.x + "</pre>";
     document.getElementById('y').innerHTML = "<pre>" + leapPointer.y + "</pre>";
@@ -140,8 +150,4 @@ function handleTick() {
 
     //Update stage will render next frame
     stage.update();
-    /*
-     ctx.clearRect(0, 0, canvas.width, canvas.height);
-     ctx.drawImage(leapPointerImg, leapPointer.x, leapPointer.y, 100*leapPointerViewDensity, 100*leapPointerViewDensity)
-     */
 }
