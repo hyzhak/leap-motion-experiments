@@ -19,6 +19,7 @@ var drawingSurfaceContainer = new createjs.Shape(drawingSurfaceGraphics);
 //Add Shape instance to stage display list.
 stage.addChild(drawingSurfaceContainer);
 stage.addChild(leapPointerImg);
+stage.addChild(game);
 
 var controller = new Leap.Controller();
 
@@ -132,13 +133,14 @@ function handleTick() {
     }else{
         stage.removeChild(leapPointerImgHint);
     }
+
     leapPointerImg.scaleX = leapPointerViewDensity;
     leapPointerImg.scaleY = leapPointerViewDensity;
     leapPointerImg.alpha = leapPointer.z > 0 ? 0.35 : 1;
     leapPointerImg.x = leapPointer.x - 16;
     leapPointerImg.y = leapPointer.y;
 
-    var density = -.3 * leapPointer.z;
+    var density = -.6 * leapPointer.z;
 
     if(density > 0){
         drawingSurfaceGraphics.beginFill('#101080').drawCircle(leapPointer.x, leapPointer.y, density);
