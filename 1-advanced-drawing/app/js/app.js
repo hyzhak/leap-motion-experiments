@@ -9,6 +9,8 @@ var stage = new createjs.Stage("surface");
 //Create a Shape DisplayObject.
 var leapPointer = {x:0, y:0, z:0};
 
+var leapPosition = {x:0, y:0, z:0};
+
 var leapPointerImg = new createjs.Bitmap("img/hand-cursor-42.png");
 var leapPointerImgHint = new createjs.Shape();
 leapPointerImgHint.graphics.beginFill('#F08010').drawCircle(0, 0, 20);
@@ -19,7 +21,6 @@ var drawingSurfaceContainer = new createjs.Shape(drawingSurfaceGraphics);
 //Add Shape instance to stage display list.
 stage.addChild(drawingSurfaceContainer);
 stage.addChild(leapPointerImg);
-stage.addChild(game);
 
 var controller = new Leap.Controller();
 
@@ -46,6 +47,10 @@ controller.onFrame(function() {
     leapPointer.x = x;
     leapPointer.y = y;
     leapPointer.z = position[2];
+
+    leapPosition.x = position[0];
+    leapPosition.y = position[1];
+    leapPosition.z = position[2];
 });
 
 controller.connect();
@@ -146,9 +151,9 @@ function handleTick() {
         drawingSurfaceGraphics.beginFill('#101080').drawCircle(leapPointer.x, leapPointer.y, density);
     }
 
-    document.getElementById('x').innerHTML = "<pre>" + leapPointer.x + "</pre>";
-    document.getElementById('y').innerHTML = "<pre>" + leapPointer.y + "</pre>";
-    document.getElementById('z').innerHTML = "<pre>" + leapPointer.z + "</pre>";
+    document.getElementById('x').innerHTML = "<pre>" + leapPosition.x + "</pre>";
+    document.getElementById('y').innerHTML = "<pre>" + leapPosition.y + "</pre>";
+    document.getElementById('z').innerHTML = "<pre>" + leapPosition.z + "</pre>";
 
     //Update stage will render next frame
     stage.update();
