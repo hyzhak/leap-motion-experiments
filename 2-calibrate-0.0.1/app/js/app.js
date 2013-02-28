@@ -10,7 +10,7 @@ app.factory('LeapMotion', function() {
         controller: null,
 
         //Use because lack of Object Observation or Dirty Checking.
-        state: {
+        //state: {
             valid: false,
             timestamp: 0,
             fingersCount: 0,
@@ -27,8 +27,8 @@ app.factory('LeapMotion', function() {
                     length: 0,
                     x:0, y:0, z:0
                 }
-            }
-        },
+            },
+        //},
 
         getController: function() {
             if(this.controller == null) {
@@ -41,32 +41,32 @@ app.factory('LeapMotion', function() {
 
                 this.controller.on('animationFrame', function() {
                     var frame = self.controller.frame();
-                    self.state.frame = frame;
-                    self.state.fingersCount = frame.pointables.length;
+                    self.frame = frame;
+                    self.fingersCount = frame.pointables.length;
                     var pointable = getNearestPointable(frame);
-                    self.state.valid = frame.valid;
+                    self.valid = frame.valid;
                     if (pointable) {
-                        self.state.timestamp = frame.timestamp;
-                        self.state.indexFinger.valid = true;
+                        self.timestamp = frame.timestamp;
+                        self.indexFinger.valid = true;
 
-                        self.state.indexFinger.position.x = pointable.tipPosition[0];
-                        self.state.indexFinger.position.y = pointable.tipPosition[1];
-                        self.state.indexFinger.position.z = pointable.tipPosition[2];
+                        self.indexFinger.position.x = pointable.tipPosition[0];
+                        self.indexFinger.position.y = pointable.tipPosition[1];
+                        self.indexFinger.position.z = pointable.tipPosition[2];
 
-                        self.state.indexFinger.velocity.x = pointable.tipVelocity[0];
-                        self.state.indexFinger.velocity.y = pointable.tipVelocity[1];
-                        self.state.indexFinger.velocity.z = pointable.tipVelocity[2];
-                        self.state.indexFinger.velocity.length = vectorLength(pointable.tipVelocity[0], pointable.tipVelocity[1], pointable.tipVelocity[2]);
+                        self.indexFinger.velocity.x = pointable.tipVelocity[0];
+                        self.indexFinger.velocity.y = pointable.tipVelocity[1];
+                        self.indexFinger.velocity.z = pointable.tipVelocity[2];
+                        self.indexFinger.velocity.length = vectorLength(pointable.tipVelocity[0], pointable.tipVelocity[1], pointable.tipVelocity[2]);
 
                         var accelX = seriesAccelerationMethodForX.forNewPosition(frame.timestamp, pointable.tipPosition[0], pointable.tipVelocity[0])
                         var accelY = seriesAccelerationMethodForY.forNewPosition(frame.timestamp, pointable.tipPosition[1], pointable.tipVelocity[1])
                         var accelZ = seriesAccelerationMethodForZ.forNewPosition(frame.timestamp, pointable.tipPosition[2], pointable.tipVelocity[2])
-                        self.state.indexFinger.acceleration.x = accelX;
-                        self.state.indexFinger.acceleration.y = accelY;
-                        self.state.indexFinger.acceleration.z = accelZ;
-                        self.state.indexFinger.acceleration.length = vectorLength(accelX, accelY, accelZ);
+                        self.indexFinger.acceleration.x = accelX;
+                        self.indexFinger.acceleration.y = accelY;
+                        self.indexFinger.acceleration.z = accelZ;
+                        self.indexFinger.acceleration.length = vectorLength(accelX, accelY, accelZ);
                     } else {
-                        self.state.indexFinger.valid = false;
+                        self.indexFinger.valid = false;
                         seriesAccelerationMethodForX.invalidate();
                     }
                 });
@@ -84,6 +84,7 @@ app.factory('LeapMotion', function() {
 
         stop: function() {
             this.play = false;
+            this.getController().disconnect();
             //Doesn't implement in js library
             //this.getController().
         }
@@ -201,13 +202,16 @@ function WindowPositionCtrl($scope, $timeout) {
 
 function LeapCursorCtrl($scope, LeapMotion) {
     LeapMotion.start();
-    $scope.indexFingerPosition = LeapMotion.state.indexFinger.position;
+    $scope.indexFingerPosition = LeapMotion.indexFinger.position;
 }
 
 function LeapPositionCtrl($scope, LeapMotion) {
     LeapMotion.start();
 
-    $scope.leap = LeapMotion.state;
+    $scope.disconnect = function() {
+        LeapMotion.stop();
+    }
+    $scope.leap = LeapMotion;
 }
 
 

@@ -500,7 +500,7 @@ Controller.prototype.connect = function() {
 }
 
 Controller.prototype.disconnect = function() {
-  this.connection.connect()
+  this.connection.disconnect()
 }
 
 Controller.prototype.frame = function(num) {
@@ -1657,10 +1657,12 @@ process.chdir = function (dir) {
 Connection.prototype.connect = function() {
   if (this.socket) return false
   var connection = this
+
+  this.connected = true;
   this.socket = new WebSocket("ws://" + this.host + ":6437")
-  this.socket.onopen = connection.handleOpen
+  this.socket.onopen = function() { connection.handleOpen(); }
   this.socket.onmessage = function(message) { connection.handleData(message.data) }
-  this.socket.onclose = connection.handleClose
+  this.socket.onclose = function() { connection.handleClose(); }
   return true
 }
 
@@ -1673,6 +1675,7 @@ var Connection = exports.Connection = function(opts) {
 }
 
 Connection.prototype.handleOpen = function() {
+    console.log('Connection.prototype.handleOpen');
   if (this.openTimer) {
     clearTimeout(this.openTimer)
     this.openTimer = undefined
@@ -1680,12 +1683,22 @@ Connection.prototype.handleOpen = function() {
 }
 
 Connection.prototype.handleClose = function() {
+    console.log('Connection.prototype.handleClose')
   var connection = this;
-  this.openTimer = setTimeout(function() { connection.connect() }, 1000)
+  this.openTimer = setTimeout(function() {
+      if(!connection.connected) {
+          return;
+      }
+
+      connection.socket = null;
+      connection.connect()
+  }, 1000)
 }
 
 Connection.prototype.disconnect = function() {
   if (!this.socket) return
+
+  this.connected = false;
   this.socket.close()
   this.socket = undefined
 }
