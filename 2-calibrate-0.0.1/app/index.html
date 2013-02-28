@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html ng-app="calibrateApp">
+<head>
+    <title>Calibrate v0.0.1</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" type="text/css" href="css/main.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/bootstrap/css/bootstrap.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/bootstrap/css/bootstrap-responsive.css"/>
+
+
+</head>
+<body>
+    <h1>Calibrate</h1>
+
+    <div ng-controller="LeapCursorCtrl">Cursor {{indexFingerPosition.x}} {{indexFingerPosition.y}} {{indexFingerPosition.z}}</div>
+
+    <div class="row-fluid">
+        <div class="span10">
+            <div id="calibrate-target">
+                <p>11111111</p>
+                <p>222222222</p>
+                <p>333333333333</p>
+                <p>444</p>
+            </div>
+        </div>
+        <div class="span2">
+            <div>
+                <div class="row" ng-controller="WindowPositionCtrl">
+                    <b>Window</b>
+                    <p>
+                        <pre>{{window.x}}, {{window.y}}</pre>
+                    </p>
+                </div>
+                <div class="row" ng-controller="LeapPositionCtrl">
+                    <b>LeapPosition</b>
+                    <div>
+                        <p>Position</p>
+                        <pre ng-show="leap.indexFinger.valid">{{leap.indexFinger.position.x}} {{leap.indexFinger.position.y}} {{leap.indexFinger.position.z}}</pre>
+                        <pre ng-hide="leap.indexFinger.valid">Invalid!</pre>
+                        <p>Velocity</p>
+                        <pre ng-show="leap.indexFinger.valid">{{leap.indexFinger.velocity.length}}</pre>
+                        <pre ng-hide="leap.indexFinger.valid">Invalid!</pre>
+                        <p>Acceleration</p>
+                        <pre ng-show="leap.indexFinger.valid">{{leap.indexFinger.acceleration.length}}</pre>
+                        <pre ng-hide="leap.indexFinger.valid">Invalid!</pre>
+                    </div>
+                    <div>Fingers : {{leap.fingersCount}}</div>
+                </div>
+            </div>
+        </div>
+        <div ng-controller="DynamicsGraphicCtrl">
+            <!--<fs-area bind="dynamics.data" field="10"/>-->
+            <fs-date-histo bind="dynamics.data" field="10"/>
+        </div>
+    </div>
+
+    <script src="lib/jquery-1.8.1.js"></script>
+    <!--<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>-->
+
+    <script src="lib/bootstrap/js/bootstrap.min.js"></script>
+
+    <script src="lib/leap.js"></script>
+    <!--<script src="https://leapmotion.com/leap.min.js"></script>-->
+
+    <script src="lib/easeljs-0.6.0.min.js"></script>
+    <!--<script src="http://code.createjs.com/easeljs-0.6.0.min.js"></script>-->
+
+    <script src="lib/angular/angular.js"></script>
+
+    <!--<script src="lib/d3/d3.js"></script>-->
+    <script src="lib/d3/d3.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+    <script src="lib/d3/dangle.js"></script>
+    <!--<script src="lib/d3/dangle.min.js"></script>-->
+
+    <script src="js/app.js"></script>
+</body>
+</html>
