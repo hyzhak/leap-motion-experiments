@@ -34,19 +34,18 @@
                     </p>
                 </div>
                 <div class="row" ng-controller="LeapPositionCtrl">
-                    <b>LeapPosition</b>
+                    <b>Index Finger Position</b>
                     <div>
                         <p>Position</p>
-                        <pre ng-show="leap.indexFinger.valid">{{leap.indexFinger.position.x}} {{leap.indexFinger.position.y}} {{leap.indexFinger.position.z}}</pre>
-                        <pre ng-hide="leap.indexFinger.valid">Invalid!</pre>
+                        <div ng-show="leap.indexFinger.valid">Valid</div>
+                        <div ng-hide="leap.indexFinger.valid">Invalid!</div>
+                        <pre>{{leap.indexFinger.position.x}} {{leap.indexFinger.position.y}} {{leap.indexFinger.position.z}}</pre>
                         <p>Velocity</p>
-                        <pre ng-show="leap.indexFinger.valid">{{leap.indexFinger.velocity.length}}</pre>
-                        <pre ng-hide="leap.indexFinger.valid">Invalid!</pre>
+                        <pre>{{leap.indexFinger.velocity.length}}</pre>
                         <p>Acceleration</p>
-                        <pre ng-show="leap.indexFinger.valid">{{leap.indexFinger.acceleration.length}}</pre>
-                        <pre ng-hide="leap.indexFinger.valid">Invalid!</pre>
+                        <pre>{{leap.indexFinger.acceleration.length}}</pre>
                     </div>
-                    <div>Fingers : {{leap.fingersCount}}</div>
+                    <div>Count : {{leap.fingersCount}}</div>
                 </div>
             </div>
         </div>

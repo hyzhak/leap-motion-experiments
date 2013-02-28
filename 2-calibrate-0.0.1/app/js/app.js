@@ -2,38 +2,6 @@ var app = angular.module('calibrateApp', [
     'dangle'
 ]);
 
-/*
-TODO : Implement more accurate method
-var AitkensDeltaSquaredProcess = function(){
-
-};
-*/
-
-var SimpleProcess = function() {
-    var valid = false;
-    var previous = {
-        deltaValue: 0,
-        previousTimestamp: 0
-    }
-
-    this.forNewPosition = function(timestamp, value, deltaValue) {
-        var result;
-        if(valid) {
-            result = (deltaValue - previous.deltaValue) / (timestamp - previous.timestamp);
-        } else {
-            result = 0;
-            valid = true;
-        }
-
-        previous.timestamp = timestamp;
-        previous.deltaValue = deltaValue;
-        return result;
-    }
-
-    this.invalidate = function() {
-        valid = false;
-    }
-}
 
 app.factory('LeapMotion', function() {
     return {
@@ -67,9 +35,9 @@ app.factory('LeapMotion', function() {
                 this.controller = new Leap.Controller();
                 var self = this;
 
-                var seriesAccelerationMethodForX = new SimpleProcess();
-                var seriesAccelerationMethodForY = new SimpleProcess();
-                var seriesAccelerationMethodForZ = new SimpleProcess();
+                var seriesAccelerationMethodForX = new SimpleAccelerationProcess();
+                var seriesAccelerationMethodForY = new SimpleAccelerationProcess();
+                var seriesAccelerationMethodForZ = new SimpleAccelerationProcess();
 
                 this.controller.on('animationFrame', function() {
                     var frame = self.controller.frame();
@@ -126,80 +94,6 @@ function vectorLength(dx, dy, dz) {
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-function WindowPositionCtrl($scope, $timeout) {
-    $scope.window = {x:0, y:0};
-
-    $timeout(updateWindowPosition, 100);
-
-    function updateWindowPosition() {
-        $scope.window.x = window.screenX;
-        $scope.window.y = window.screenY;
-        $timeout(updateWindowPosition, 100);
-    }
-}
-
-function LeapCursorCtrl($scope, LeapMotion) {
-    LeapMotion.start();
-    $scope.indexFingerPosition = LeapMotion.state.indexFinger.position;
-}
-
-function LeapPositionCtrl($scope, LeapMotion) {
-    LeapMotion.start();
-
-    $scope.leap = LeapMotion.state;
-    /*
-    $scope.$watch('state.timestamp', function(oldValue, newValue){
-        var indexFinger = LeapMotion.state.indexFinger;
-        $scope.leap = {
-            x: indexFinger.position.x,
-            y: indexFinger.position.y,
-            z: indexFinger.position.z,
-            fingersCount: LeapMotion.state.fingersCount,
-            valid: LeapMotion.state.indexFinger.valid
-        }
-    })
-    */
-
-    /*$scope.leap.x = LeapMotion.indexFingerPosition.x;
-    $scope.leap.y = LeapMotion.indexFingerPosition.y;
-    $scope.leap.z = LeapMotion.indexFingerPosition.z;
-
-    $scope.leap.fingersCount = LeapMotion.fingersCount;
-
-    $scope.leap.valid = LeapMotion.valid;*/
-
-    /*
-    var controller = new Leap.Controller();
-
-    //controller.on('frame', function() {
-    controller.on('animationFrame', function() {
-        var frame = controller.frame();
-        if(frame == null || !frame.valid) {
-            $scope.leap.valid = false;
-            return;
-        }
-
-        $scope.leap.valid = true;
-        $scope.leap.fingersCount = frame.pointables.length;
-        var pointable = getNearestPointable(frame);
-
-        if(!pointable){
-            return;
-        }
-
-        $scope.leap.singleFinger = true;
-
-        var position = pointable.tipPosition;
-
-        $scope.leap.x = position[0];
-        $scope.leap.y = position[1];
-        $scope.leap.z = position[2];
-    });
-
-    controller.connect();
-     */
-}
-
 /**
  * Z is point to user so, nearest pointable to screen with less Z.
  * @param frame
@@ -225,6 +119,97 @@ function getNearestPointable(frame) {
 
     return nearestPoinable;
 }
+
+/*
+Implement more accurate method
+ http://en.wikipedia.org/wiki/Aitken%27s_delta-squared_process
+
+ FIX : use timestamp for calculation
+*/
+
+var AitkensDeltaSquaredProcess = function(){
+    var valid = false;
+    var previous1 = {
+        timestamp: 0,
+        value: 0
+    }
+
+    var previous2 = {};
+
+    this.forNewPosition = function(timestamp, value, deltaValue) {
+        var result;
+        if(valid) {
+            result = (value * previous2.value - previous1.value * previous1.value ) / (value - 2 * previous1.value + previous2.value );
+        } else {
+            previous2.timestamp = previous1.timestamp;
+            previous2.value = previous1.value;
+
+            previous1.timestamp = timestamp;
+            previous1.value = value;
+
+            valid = previous2.timestamp != 0;
+
+            result = 0;
+        }
+
+        return result;
+    }
+
+    this.invalidate = function() {
+        valid = false;
+        previous1.timestamp = 0;
+    }
+};
+
+var SimpleAccelerationProcess = function() {
+    var valid = false;
+    var previous = {
+        timestamp: 0,
+        deltaValue: 0
+    }
+
+    this.forNewPosition = function(timestamp, value, deltaValue) {
+        var result;
+        if(valid) {
+            result = (deltaValue - previous.deltaValue) / (timestamp - previous.timestamp);
+        } else {
+            result = 0;
+            valid = true;
+        }
+
+        previous.timestamp = timestamp;
+        previous.deltaValue = deltaValue;
+        return result;
+    }
+
+    this.invalidate = function() {
+        valid = false;
+    }
+}
+
+function WindowPositionCtrl($scope, $timeout) {
+    $scope.window = {x:0, y:0};
+
+    $timeout(updateWindowPosition, 100);
+
+    function updateWindowPosition() {
+        $scope.window.x = window.screenX;
+        $scope.window.y = window.screenY;
+        $timeout(updateWindowPosition, 100);
+    }
+}
+
+function LeapCursorCtrl($scope, LeapMotion) {
+    LeapMotion.start();
+    $scope.indexFingerPosition = LeapMotion.state.indexFinger.position;
+}
+
+function LeapPositionCtrl($scope, LeapMotion) {
+    LeapMotion.start();
+
+    $scope.leap = LeapMotion.state;
+}
+
 
 function DynamicsGraphicCtrl($scope) {
     $scope.dynamics = {
