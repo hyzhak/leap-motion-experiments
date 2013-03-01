@@ -4,31 +4,69 @@ var app = angular.module('calibrateApp', [
 
 
 app.factory('LeapMotion', function() {
-    return {
-        play : false,
+    var sx = 4;
+    var sy = -4;
+    var tx = window.innerHeight / 2;
+    var ty = window.innerWidth / 2;
 
+    /*
+
+    var defaultCalibrationMatrix = [
+        sx, 0,  tx,
+        0,  sy, ty,
+        0,  0,  1
+    ];
+
+     var positionMatrix = [
+         1, 0, 0,
+         0, 1, 0,
+         0, 0, 1
+     ];
+
+    */
+
+    var defaultCalibrationMatrix = $M([
+        [sx, 0, tx],
+        [0, sy, ty],
+        [0,  0,  1]
+    ]);
+
+    var positionMatrix = $M([
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+    ]);
+
+    var latencyCalibration = Number.NaN;
+
+    return {
+        connected : false,
         controller: null,
 
-        //Use because lack of Object Observation or Dirty Checking.
-        //state: {
+        valid: false,
+        timestamp: 0,
+        timestampDelta: 0,
+        fps: 0,
+        latency: 0,
+        fingersCount: 0,
+        frame: null,
+
+        indexFinger: {
             valid: false,
-            timestamp: 0,
-            fingersCount: 0,
-            frame: null,
-            indexFinger: {
-                valid: false,
-                position: {x:0, y:0, z:0},
-                velocity: {
-                    length: 0,
-                    x:0, y:0, z:0
-                },
-                //use Aitken's delta-squared process for calculation acceleration
-                acceleration: {
-                    length: 0,
-                    x:0, y:0, z:0
-                }
+            tool: false,
+            position: { x:0, y:0, z:0 },
+            screenPosition: { x:0, y:0, z:0 },
+            screenStyledPosition: { x: '', y: '', z: '' },
+            velocity: {
+                length: 0,
+                x:0, y:0, z:0
             },
-        //},
+            //use Aitken's delta-squared process for calculation acceleration
+            acceleration: {
+                length: 0,
+                x:0, y:0, z:0
+            }
+        },
 
         getController: function() {
             if(this.controller == null) {
@@ -43,15 +81,44 @@ app.factory('LeapMotion', function() {
                     var frame = self.controller.frame();
                     self.frame = frame;
                     self.fingersCount = frame.pointables.length;
+
+                    if(self.fingersCount == 0 && frame.valid) {
+                        latencyCalibration = Date.now() - 0.001 * frame.timestamp;
+                    }
+
                     var pointable = getNearestPointable(frame);
                     self.valid = frame.valid;
                     if (pointable) {
+                        if(self.timestamp > 0) {
+                            self.timestampDelta = frame.timestamp - self.timestamp;
+                            self.fps = 1000000 / self.timestampDelta;
+                            if(!isNaN(latencyCalibration)) {
+                                self.latency = Date.now() - 0.001 * frame.timestamp - latencyCalibration;
+                            }
+                        }
                         self.timestamp = frame.timestamp;
                         self.indexFinger.valid = true;
+                        self.indexFinger.tool = pointable.tool;
 
-                        self.indexFinger.position.x = pointable.tipPosition[0];
-                        self.indexFinger.position.y = pointable.tipPosition[1];
-                        self.indexFinger.position.z = pointable.tipPosition[2];
+
+                        var x = pointable.tipPosition[0];
+                        var y = pointable.tipPosition[1];
+                        var z = pointable.tipPosition[2];
+
+                        self.indexFinger.position.x = x;
+                        self.indexFinger.position.y = y;
+                        self.indexFinger.position.z = z;
+
+                        //multiply on calibrationMatrix;
+                        positionMatrix.elements[0][2] = x;
+                        positionMatrix.elements[1][2] = y;
+                        var screenPositionMatrix = defaultCalibrationMatrix.x(positionMatrix);
+
+                        self.indexFinger.screenStyledPosition.x = Math.round(screenPositionMatrix.elements[0][2]) + 'px';
+                        self.indexFinger.screenStyledPosition.y = Math.round(screenPositionMatrix.elements[1][2]) + 'px';
+//                        self.indexFinger.screenStyledPosition.x = Math.round(x * 3) + 'px';
+//                        self.indexFinger.screenStyledPosition.y = Math.round(600 - y * 3) + 'px';
+
 
                         self.indexFinger.velocity.x = pointable.tipVelocity[0];
                         self.indexFinger.velocity.y = pointable.tipVelocity[1];
@@ -74,16 +141,16 @@ app.factory('LeapMotion', function() {
             return this.controller;
         },
 
-        start: function() {
-            if (this.play) {
+        connect: function() {
+            if (this.connected) {
                 return;
             }
-            this.play = true;
+            this.connected = true;
             this.getController().connect();
         },
 
-        stop: function() {
-            this.play = false;
+        disconnect: function() {
+            this.connected = false;
             this.getController().disconnect();
             //Doesn't implement in js library
             //this.getController().
@@ -201,16 +268,29 @@ function WindowPositionCtrl($scope, $timeout) {
 }
 
 function LeapCursorCtrl($scope, LeapMotion) {
-    LeapMotion.start();
-    $scope.indexFingerPosition = LeapMotion.indexFinger.position;
+    LeapMotion.connect();
+    $scope.leap = LeapMotion;
+    $scope.cursorStyle = function() {
+        return {
+            display: ($scope.leap.indexFinger.valid?'':'none'),
+            position: 'fixed',
+            left: $scope.leap.indexFinger.screenStyledPosition.x,
+            top: $scope.leap.indexFinger.screenStyledPosition.y
+        };
+    }
 }
 
 function LeapPositionCtrl($scope, LeapMotion) {
-    LeapMotion.start();
+    LeapMotion.connect();
 
     $scope.disconnect = function() {
-        LeapMotion.stop();
+        LeapMotion.connect();
     }
+
+    $scope.connect = function() {
+        LeapMotion.disconnect();
+    }
+
     $scope.leap = LeapMotion;
 }
 

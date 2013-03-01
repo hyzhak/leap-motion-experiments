@@ -1675,7 +1675,6 @@ var Connection = exports.Connection = function(opts) {
 }
 
 Connection.prototype.handleOpen = function() {
-    console.log('Connection.prototype.handleOpen');
   if (this.openTimer) {
     clearTimeout(this.openTimer)
     this.openTimer = undefined
@@ -1683,7 +1682,6 @@ Connection.prototype.handleOpen = function() {
 }
 
 Connection.prototype.handleClose = function() {
-    console.log('Connection.prototype.handleClose')
   var connection = this;
   this.openTimer = setTimeout(function() {
       if(!connection.connected) {
